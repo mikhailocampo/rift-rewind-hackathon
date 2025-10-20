@@ -166,24 +166,15 @@ export class MatchRepository {
 
     // Batch insert with custom SQL to handle type casts
     const sql = this.rdsClient.buildBatchInsertSQL('match_participant', columns, rows.length);
-    const sqlWithCasts = sql.replace(
-      `INSERT INTO match_participant (${columns.join(', ')})`,
-      `INSERT INTO match_participant (${columns.join(', ')})`
-    ).replace(/VALUES (.+)$/, (match, values) => {
-      // Add type casts for special columns
-      const castedValues = values.replace(
-        /\(:row(\d+)_match_id,/g, '(:row$1_match_id::uuid,'
-      ).replace(
-        /,\s*:row(\d+)_summoner_spells,/g, ', :row$1_summoner_spells::int[],'
-      ).replace(
-        /,\s*:row(\d+)_items,/g, ', :row$1_items::int[],'
-      ).replace(
-        /,\s*:row(\d+)_stat_perks,/g, ', :row$1_stat_perks::jsonb,'
-      ).replace(
-        /,\s*:row(\d+)_challenges,/g, ', :row$1_challenges::jsonb,'
-      ).replace(
-        /,\s*:row(\d+)_raw_data\)/g, ', :row$1_raw_data::jsonb)'
-      );
+    const sqlWithCasts = sql.replace(/VALUES (.+)$/s, (match, values) => {
+      // Add type casts for special columns (handle both comma and closing paren after param)
+      const castedValues = values
+        .replace(/:row(\d+)_match_id([,)])/g, ':row$1_match_id::uuid$2')
+        .replace(/:row(\d+)_summoner_spells([,)])/g, ':row$1_summoner_spells::int[]$2')
+        .replace(/:row(\d+)_items([,)])/g, ':row$1_items::int[]$2')
+        .replace(/:row(\d+)_stat_perks([,)])/g, ':row$1_stat_perks::jsonb$2')
+        .replace(/:row(\d+)_challenges([,)])/g, ':row$1_challenges::jsonb$2')
+        .replace(/:row(\d+)_raw_data([,)])/g, ':row$1_raw_data::jsonb$2');
       return `VALUES ${castedValues}`;
     });
 
@@ -239,15 +230,12 @@ export class MatchRepository {
 
     // Batch insert with custom SQL to handle type casts
     const sql = this.rdsClient.buildBatchInsertSQL('match_team', columns, rows.length);
-    const sqlWithCasts = sql.replace(/VALUES (.+)$/, (match, values) => {
-      // Add type casts for special columns
-      const castedValues = values.replace(
-        /\(:row(\d+)_match_id,/g, '(:row$1_match_id::uuid,'
-      ).replace(
-        /,\s*:row(\d+)_bans,/g, ', :row$1_bans::int[],'
-      ).replace(
-        /,\s*:row(\d+)_raw_data\)/g, ', :row$1_raw_data::jsonb)'
-      );
+    const sqlWithCasts = sql.replace(/VALUES (.+)$/s, (match, values) => {
+      // Add type casts for special columns (handle both comma and closing paren after param)
+      const castedValues = values
+        .replace(/:row(\d+)_match_id([,)])/g, ':row$1_match_id::uuid$2')
+        .replace(/:row(\d+)_bans([,)])/g, ':row$1_bans::int[]$2')
+        .replace(/:row(\d+)_raw_data([,)])/g, ':row$1_raw_data::jsonb$2');
       return `VALUES ${castedValues}`;
     });
 
@@ -313,13 +301,11 @@ export class MatchRepository {
       const batch = rows.slice(i, i + batchSize);
       
       const sql = this.rdsClient.buildBatchInsertSQL('match_timeline_frame', columns, batch.length);
-      const sqlWithCasts = sql.replace(/VALUES (.+)$/, (match, values) => {
-        // Add type casts for special columns
-        const castedValues = values.replace(
-          /\(:row(\d+)_match_id,/g, '(:row$1_match_id::uuid,'
-        ).replace(
-          /,\s*:row(\d+)_champion_stats\)/g, ', :row$1_champion_stats::jsonb)'
-        );
+      const sqlWithCasts = sql.replace(/VALUES (.+)$/s, (match, values) => {
+        // Add type casts for special columns (handle both comma and closing paren after param)
+        const castedValues = values
+          .replace(/:row(\d+)_match_id([,)])/g, ':row$1_match_id::uuid$2')
+          .replace(/:row(\d+)_champion_stats([,)])/g, ':row$1_champion_stats::jsonb$2');
         return `VALUES ${castedValues}`;
       });
 
@@ -402,15 +388,12 @@ export class MatchRepository {
       const batch = rows.slice(i, i + batchSize);
       
       const sql = this.rdsClient.buildBatchInsertSQL('match_timeline_event', columns, batch.length);
-      const sqlWithCasts = sql.replace(/VALUES (.+)$/, (match, values) => {
-        // Add type casts for special columns
-        const castedValues = values.replace(
-          /\(:row(\d+)_match_id,/g, '(:row$1_match_id::uuid,'
-        ).replace(
-          /,\s*:row(\d+)_assisting_participant_ids,/g, ', :row$1_assisting_participant_ids::int[],'
-        ).replace(
-          /,\s*:row(\d+)_raw_data\)/g, ', :row$1_raw_data::jsonb)'
-        );
+      const sqlWithCasts = sql.replace(/VALUES (.+)$/s, (match, values) => {
+        // Add type casts for special columns (handle both comma and closing paren after param)
+        const castedValues = values
+          .replace(/:row(\d+)_match_id([,)])/g, ':row$1_match_id::uuid$2')
+          .replace(/:row(\d+)_assisting_participant_ids([,)])/g, ':row$1_assisting_participant_ids::int[]$2')
+          .replace(/:row(\d+)_raw_data([,)])/g, ':row$1_raw_data::jsonb$2');
         return `VALUES ${castedValues}`;
       });
 
