@@ -13,7 +13,8 @@
     "moduleResolution": "node"
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    "sample_data/**/*"
   ],
   "exclude": [
     "node_modules",
