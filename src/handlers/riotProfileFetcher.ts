@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { ProfileService } from './services/profileService';
-import { RiotProfileRequest } from './types';
+import { ProfileService } from '../services/profileService';
+import { RiotProfileRequest } from '../types';
 
 /**
  * Riot Profile Fetcher Lambda

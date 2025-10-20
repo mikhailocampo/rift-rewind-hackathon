@@ -34,10 +34,35 @@ provider:
 
 functions:
   riotProfileFetcher:
-    handler: dist/handler.riotProfileFetcher
+    handler: dist/handlers/riotProfileFetcher.riotProfileFetcher
     events:
       - http:
           path: /profile
+          method: post
+          cors: true
+
+  fetchMatchIds:
+    handler: dist/handlers/fetchMatchIds.handler
+    events:
+      - http:
+          path: /matches/player/{puuid}
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                puuid: true
+              querystrings:
+                start: false
+                count: false
+                region: false
+
+  ingestMatch:
+    handler: dist/handlers/ingestMatch.handler
+    timeout: 60  # Increase timeout for API calls + DB inserts
+    events:
+      - http:
+          path: /matches/ingest
           method: post
           cors: true
 
