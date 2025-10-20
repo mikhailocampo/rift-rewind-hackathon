@@ -1,4 +1,4 @@
-import { riotProfileFetcher } from '../handler';
+import { riotProfileFetcher } from '../handlers/riotProfileFetcher';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
 // Mock AWS SDK
