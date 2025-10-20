@@ -93,7 +93,7 @@ export class MatchRepository {
       resourceArn: this.resourceArn,
       secretArn: this.secretArn,
       database: this.database,
-      sql: 'DELETE FROM match_participant WHERE match_id = :match_id',
+      sql: 'DELETE FROM match_participant WHERE match_id = :match_id::uuid',
       parameters: [{ name: 'match_id', value: { stringValue: matchId } }]
     }).promise();
 
@@ -107,7 +107,7 @@ export class MatchRepository {
           cs_total, champ_level, vision_score, win,
           primary_rune_style, sub_rune_style, stat_perks, challenges, raw_data
         ) VALUES (
-          :match_id, :participant_id, :puuid, :team_id, :champion_id, :champion_name,
+          :match_id::uuid, :participant_id, :puuid, :team_id, :champion_id, :champion_name,
           :team_position, :individual_position, :summoner_spells, :items,
           :kills, :deaths, :assists, :gold_earned, :total_damage_to_champions,
           :cs_total, :champ_level, :vision_score, :win,
@@ -160,7 +160,7 @@ export class MatchRepository {
       resourceArn: this.resourceArn,
       secretArn: this.secretArn,
       database: this.database,
-      sql: 'DELETE FROM match_team WHERE match_id = :match_id',
+      sql: 'DELETE FROM match_team WHERE match_id = :match_id::uuid',
       parameters: [{ name: 'match_id', value: { stringValue: matchId } }]
     }).promise();
 
@@ -170,7 +170,7 @@ export class MatchRepository {
         INSERT INTO match_team (
           match_id, team_id, win, barons, dragons, towers, inhibitors, rift_heralds, bans, raw_data
         ) VALUES (
-          :match_id, :team_id, :win, :barons, :dragons, :towers, :inhibitors, :rift_heralds, :bans, :raw_data::jsonb
+          :match_id::uuid, :team_id, :win, :barons, :dragons, :towers, :inhibitors, :rift_heralds, :bans, :raw_data::jsonb
         )
       `;
 
@@ -205,7 +205,7 @@ export class MatchRepository {
       resourceArn: this.resourceArn,
       secretArn: this.secretArn,
       database: this.database,
-      sql: 'DELETE FROM match_timeline_frame WHERE match_id = :match_id',
+      sql: 'DELETE FROM match_timeline_frame WHERE match_id = :match_id::uuid',
       parameters: [{ name: 'match_id', value: { stringValue: matchId } }]
     }).promise();
 
@@ -221,7 +221,7 @@ export class MatchRepository {
             total_gold, current_gold, gold_per_second, xp, level,
             position_x, position_y, champion_stats
           ) VALUES (
-            :match_id, :frame_number, :timestamp_ms, :participant_id,
+            :match_id::uuid, :frame_number, :timestamp_ms, :participant_id,
             :total_gold, :current_gold, :gold_per_second, :xp, :level,
             :position_x, :position_y, :champion_stats::jsonb
           )
@@ -261,7 +261,7 @@ export class MatchRepository {
       resourceArn: this.resourceArn,
       secretArn: this.secretArn,
       database: this.database,
-      sql: 'DELETE FROM match_timeline_event WHERE match_id = :match_id',
+      sql: 'DELETE FROM match_timeline_event WHERE match_id = :match_id::uuid',
       parameters: [{ name: 'match_id', value: { stringValue: matchId } }]
     }).promise();
 
@@ -279,7 +279,7 @@ export class MatchRepository {
             building_type, tower_type, lane_type, monster_type, monster_sub_type,
             item_id, skill_slot, ward_type, raw_data
           ) VALUES (
-            :match_id, :frame_number, :timestamp_ms, :event_type,
+            :match_id::uuid, :frame_number, :timestamp_ms, :event_type,
             :participant_id, :killer_participant_id, :victim_participant_id, :assisting_participant_ids,
             :position_x, :position_y,
             :building_type, :tower_type, :lane_type, :monster_type, :monster_sub_type,
