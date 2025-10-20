@@ -1,10 +1,14 @@
 /**
  * TDD tests for matchDataBuilder
  * Uses real sample data from sample_data/ directory
+ * 
+ * IMPORTANT: These tests also validate that data types match the database schema
+ * to catch type mismatches before they cause SQL errors.
  */
 
 import { MatchDataBuilder } from '../matchDataBuilder';
 import { MatchResponse, TimelineResponse } from '../../types';
+import { SchemaValidator } from '../../database/schemaValidator';
 import * as matchData from '../../../sample_data/match.json';
 import * as timelineData from '../../../sample_data/MatchTimeline.json';
 
@@ -342,6 +346,56 @@ describe('MatchDataBuilder', () => {
       expect(result.teams.every(t => t.match_id === matchId)).toBe(true);
       expect(result.frames.every(f => f.match_id === matchId)).toBe(true);
       expect(result.events.every(e => e.match_id === matchId)).toBe(true);
+    });
+
+    it('should validate against database schema (SQL type safety)', () => {
+      const result = MatchDataBuilder.buildCompleteMatchData(sampleMatch, sampleTimeline);
+
+      // This test validates that all data types match what PostgreSQL expects
+      // If this test fails, it means you'll get SQL type errors at runtime
+      expect(() => {
+        SchemaValidator.validateCompleteMatchData(result);
+      }).not.toThrow();
+    });
+
+    it('should validate match data types', () => {
+      const result = MatchDataBuilder.buildMatchData(sampleMatch);
+      
+      expect(() => {
+        SchemaValidator.validateRecord('match', result);
+      }).not.toThrow();
+    });
+
+    it('should validate participant data types', () => {
+      const result = MatchDataBuilder.buildParticipantsData(sampleMatch, testMatchId);
+      
+      expect(() => {
+        SchemaValidator.validateRecords('match_participant', result);
+      }).not.toThrow();
+    });
+
+    it('should validate team data types', () => {
+      const result = MatchDataBuilder.buildTeamsData(sampleMatch, testMatchId);
+      
+      expect(() => {
+        SchemaValidator.validateRecords('match_team', result);
+      }).not.toThrow();
+    });
+
+    it('should validate timeline frame data types', () => {
+      const result = MatchDataBuilder.buildTimelineFramesData(sampleTimeline, testMatchId);
+      
+      expect(() => {
+        SchemaValidator.validateRecords('match_timeline_frame', result);
+      }).not.toThrow();
+    });
+
+    it('should validate timeline event data types', () => {
+      const result = MatchDataBuilder.buildTimelineEventsData(sampleTimeline, testMatchId);
+      
+      expect(() => {
+        SchemaValidator.validateRecords('match_timeline_event', result);
+      }).not.toThrow();
     });
   });
 });

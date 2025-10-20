@@ -38,7 +38,7 @@ export class MatchRepository {
         game_version, duration_seconds, started_at, ended_at, winning_team_id, payload
       ) VALUES (
         :external_match_id, :game, :platform_id, :game_mode, :queue_id, :map_id,
-        :game_version, :duration_seconds, :started_at, :ended_at, :winning_team_id, :payload
+        :game_version, :duration_seconds, :started_at::timestamptz, :ended_at::timestamptz, :winning_team_id, :payload::jsonb
       )
       ON CONFLICT (game, external_match_id) DO UPDATE SET
         platform_id = EXCLUDED.platform_id,
@@ -111,7 +111,7 @@ export class MatchRepository {
           :team_position, :individual_position, :summoner_spells, :items,
           :kills, :deaths, :assists, :gold_earned, :total_damage_to_champions,
           :cs_total, :champ_level, :vision_score, :win,
-          :primary_rune_style, :sub_rune_style, :stat_perks, :challenges, :raw_data
+          :primary_rune_style, :sub_rune_style, :stat_perks::jsonb, :challenges::jsonb, :raw_data::jsonb
         )
       `;
 
@@ -170,7 +170,7 @@ export class MatchRepository {
         INSERT INTO match_team (
           match_id, team_id, win, barons, dragons, towers, inhibitors, rift_heralds, bans, raw_data
         ) VALUES (
-          :match_id, :team_id, :win, :barons, :dragons, :towers, :inhibitors, :rift_heralds, :bans, :raw_data
+          :match_id, :team_id, :win, :barons, :dragons, :towers, :inhibitors, :rift_heralds, :bans, :raw_data::jsonb
         )
       `;
 
@@ -223,7 +223,7 @@ export class MatchRepository {
           ) VALUES (
             :match_id, :frame_number, :timestamp_ms, :participant_id,
             :total_gold, :current_gold, :gold_per_second, :xp, :level,
-            :position_x, :position_y, :champion_stats
+            :position_x, :position_y, :champion_stats::jsonb
           )
         `;
 
@@ -283,7 +283,7 @@ export class MatchRepository {
             :participant_id, :killer_participant_id, :victim_participant_id, :assisting_participant_ids,
             :position_x, :position_y,
             :building_type, :tower_type, :lane_type, :monster_type, :monster_sub_type,
-            :item_id, :skill_slot, :ward_type, :raw_data
+            :item_id, :skill_slot, :ward_type, :raw_data::jsonb
           )
         `;
 
