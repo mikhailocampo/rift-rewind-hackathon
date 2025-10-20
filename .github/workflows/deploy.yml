@@ -3,16 +3,18 @@ name: Deploy to AWS
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       stage:
-        description: 'Deployment stage'
+        description: 'Deployment stage (for debugging only)'
         required: true
         default: 'dev'
         type: choice
         options:
           - dev
-          - staging
           - prod
 
 permissions:
@@ -95,8 +97,11 @@ jobs:
     name: Deploy to AWS
     needs: [build, test]
     runs-on: ubuntu-latest
-    # Only deploy on PRs (not on PR close) or manual workflow dispatch
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    # Deploy on: PRs (dev), push to main (prod), or manual workflow dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
 
     steps:
       - name: Checkout code
@@ -134,28 +139,50 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
 
+      - name: Determine deployment stage
+        id: stage
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "stage=${{ github.event.inputs.stage }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "stage=dev" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "push" ] && [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "stage=prod" >> $GITHUB_OUTPUT
+          else
+            echo "stage=dev" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy to AWS
-        run: npx serverless deploy --stage dev --verbose
+        run: npx serverless deploy --stage ${{ steps.stage.outputs.stage }} --verbose
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-      - name: Get API Gateway URL
-        id: get-url
+      - name: Get deployment info
+        id: info
         run: |
-          API_URL=$(npx serverless info --stage dev | grep "POST - " | awk '{print $3}')
-          echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+          STAGE="${{ steps.stage.outputs.stage }}"
+          echo "stage=$STAGE" >> $GITHUB_OUTPUT
+          BASE_URL=$(npx serverless info --stage $STAGE --verbose 2>&1 | grep -oP 'https://[a-z0-9]+\.execute-api\.[a-z0-9-]+\.amazonaws\.com/[a-z]+' | head -1)
+          echo "base_url=$BASE_URL" >> $GITHUB_OUTPUT
+          echo "✅ Deployed to $STAGE: $BASE_URL"
 
       - name: Comment PR with deployment info
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
-            const apiUrl = '${{ steps.get-url.outputs.api_url }}';
+            const stage = '${{ steps.info.outputs.stage }}';
+            const baseUrl = '${{ steps.info.outputs.base_url }}';
             const body = `### Deployment Successful! 🚀
 
-            **Stage:** dev
-            **API Endpoint:** ${apiUrl || 'Fetching...'}
+            **Stage:** \`${stage}\`
+            **Base URL:** \`${baseUrl}\`
+
+            **Available Endpoints:**
+            - \`POST ${baseUrl}/profile\` - Fetch player profile
+            - \`GET ${baseUrl}/matches/player/{puuid}\` - Get match IDs
+            - \`POST ${baseUrl}/matches/ingest\` - Ingest match data
 
             Your changes have been deployed and are ready for testing.`;
 
