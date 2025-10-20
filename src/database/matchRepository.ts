@@ -108,7 +108,7 @@ export class MatchRepository {
           primary_rune_style, sub_rune_style, stat_perks, challenges, raw_data
         ) VALUES (
           :match_id::uuid, :participant_id, :puuid, :team_id, :champion_id, :champion_name,
-          :team_position, :individual_position, :summoner_spells, :items,
+          :team_position, :individual_position, :summoner_spells::int[], :items::int[],
           :kills, :deaths, :assists, :gold_earned, :total_damage_to_champions,
           :cs_total, :champ_level, :vision_score, :win,
           :primary_rune_style, :sub_rune_style, :stat_perks::jsonb, :challenges::jsonb, :raw_data::jsonb
@@ -170,7 +170,7 @@ export class MatchRepository {
         INSERT INTO match_team (
           match_id, team_id, win, barons, dragons, towers, inhibitors, rift_heralds, bans, raw_data
         ) VALUES (
-          :match_id::uuid, :team_id, :win, :barons, :dragons, :towers, :inhibitors, :rift_heralds, :bans, :raw_data::jsonb
+          :match_id::uuid, :team_id, :win, :barons, :dragons, :towers, :inhibitors, :rift_heralds, :bans::int[], :raw_data::jsonb
         )
       `;
 
@@ -280,7 +280,7 @@ export class MatchRepository {
             item_id, skill_slot, ward_type, raw_data
           ) VALUES (
             :match_id::uuid, :frame_number, :timestamp_ms, :event_type,
-            :participant_id, :killer_participant_id, :victim_participant_id, :assisting_participant_ids,
+            :participant_id, :killer_participant_id, :victim_participant_id, :assisting_participant_ids::int[],
             :position_x, :position_y,
             :building_type, :tower_type, :lane_type, :monster_type, :monster_sub_type,
             :item_id, :skill_slot, :ward_type, :raw_data::jsonb
