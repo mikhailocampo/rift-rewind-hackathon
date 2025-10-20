@@ -1,0 +1,56 @@
+service: riot-profile-fetcher
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-west-1
+  stage: ${opt:stage, 'dev'}
+  timeout: 30
+  memorySize: 512
+  environment:
+    RIOT_API_SECRET_ARN: arn:aws:secretsmanager:us-west-1:279243015913:secret:riot_api_key-V5XtIu
+    RDS_CLUSTER_ARN: arn:aws:rds:us-west-1:279243015913:cluster:rift-rewind
+    RDS_SECRET_ARN: arn:aws:secretsmanager:us-west-1:279243015913:secret:rds!cluster-de8e9b96-be1e-41db-a6d2-72725559a600-ZukdIB
+    DATABASE_NAME: postgres
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource:
+            - arn:aws:secretsmanager:us-west-1:279243015913:secret:riot_api_key-V5XtIu
+            - arn:aws:secretsmanager:us-west-1:279243015913:secret:rds!cluster-de8e9b96-be1e-41db-a6d2-72725559a600-ZukdIB
+        - Effect: Allow
+          Action:
+            - rds-data:ExecuteStatement
+            - rds-data:BeginTransaction
+            - rds-data:CommitTransaction
+            - rds-data:RollbackTransaction
+          Resource:
+            - arn:aws:rds:us-west-1:279243015913:db:rift-rewind-instance-1
+
+functions:
+  riotProfileFetcher:
+    handler: dist/handler.riotProfileFetcher
+    events:
+      - http:
+          path: /profile
+          method: post
+          cors: true
+
+package:
+  patterns:
+    - 'dist/**'
+    - 'node_modules/**'
+  exclude:
+    - '.git/**'
+    - '.serverless/**'
+    - '.vscode/**'
+    - 'src/**'
+    - '.env'
+    - 'README*.md'
+    - 'tsconfig.json'
+    - '*.test.*'

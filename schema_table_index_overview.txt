@@ -1,0 +1,74 @@
+schema_name	table_name	column_name	data_type	is_nullable	column_default	index_name	is_unique	index_columns
+public	app_user	id	uuid	NO	gen_random_uuid()	app_user_cognito_sub_key	t	cognito_sub
+public	app_user	id	uuid	NO	gen_random_uuid()	app_user_pkey	t	id
+public	app_user	cognito_sub	text	NO		app_user_cognito_sub_key	t	cognito_sub
+public	app_user	cognito_sub	text	NO		app_user_pkey	t	id
+public	app_user	email	text	NO		app_user_cognito_sub_key	t	cognito_sub
+public	app_user	email	text	NO		app_user_pkey	t	id
+public	app_user	created_at	timestamp with time zone	NO	now()	app_user_cognito_sub_key	t	cognito_sub
+public	app_user	created_at	timestamp with time zone	NO	now()	app_user_pkey	t	id
+public	match	id	uuid	NO	gen_random_uuid()	match_external_match_id_key	t	external_match_id
+public	match	id	uuid	NO	gen_random_uuid()	match_game_external_match_id_key	t	game, external_match_id
+public	match	id	uuid	NO	gen_random_uuid()	match_pkey	t	id
+public	match	game	text	NO		match_external_match_id_key	t	external_match_id
+public	match	game	text	NO		match_game_external_match_id_key	t	game, external_match_id
+public	match	game	text	NO		match_pkey	t	id
+public	match	external_match_id	text	NO		match_external_match_id_key	t	external_match_id
+public	match	external_match_id	text	NO		match_game_external_match_id_key	t	game, external_match_id
+public	match	external_match_id	text	NO		match_pkey	t	id
+public	match	started_at	timestamp with time zone	YES		match_external_match_id_key	t	external_match_id
+public	match	started_at	timestamp with time zone	YES		match_game_external_match_id_key	t	game, external_match_id
+public	match	started_at	timestamp with time zone	YES		match_pkey	t	id
+public	match	payload	jsonb	NO		match_external_match_id_key	t	external_match_id
+public	match	payload	jsonb	NO		match_game_external_match_id_key	t	game, external_match_id
+public	match	payload	jsonb	NO		match_pkey	t	id
+public	match	platform_id	text	YES		match_external_match_id_key	t	external_match_id
+public	match	platform_id	text	YES		match_game_external_match_id_key	t	game, external_match_id
+public	match	platform_id	text	YES		match_pkey	t	id
+public	player_profile	id	uuid	NO	gen_random_uuid()	player_profile_pkey	t	id
+public	player_profile	riot_tagline	text	YES		player_profile_pkey	t	id
+public	player_profile	riot_gamename	text	YES		player_profile_pkey	t	id
+public	player_profile	meta	jsonb	NO	'{}'::jsonb	player_profile_pkey	t	id
+public	player_profile	puuid	text	YES		player_profile_pkey	t	id
+public	player_profile	platform_id	text	YES		player_profile_pkey	t	id
+public	user_matches	user_id	uuid	NO		user_matches_pkey	t	user_id, match_id
+public	user_matches	match_id	text	NO		user_matches_pkey	t	user_id, match_id
+public	user_player_link	user_id	uuid	NO		user_player_link_pkey	t	user_id, player_id
+public	user_player_link	player_id	uuid	NO		user_player_link_pkey	t	user_id, player_id
+public	user_player_link	claimed	boolean	NO	true	user_player_link_pkey	t	user_id, player_id
+public	user_player_link	created_at	timestamp with time zone	NO	now()	user_player_link_pkey	t	user_id, player_id
+public	user_preferences	user_id	uuid	NO		user_preferences_pkey	t	user_id
+public	user_preferences	prefs	jsonb	NO	'{}'::jsonb	user_preferences_pkey	t	user_id
+public	user_preferences	updated_at	timestamp with time zone	NO	now()	user_preferences_pkey	t	user_id
+
+
+RETRIEVED VIA
+```sql
+\copy (
+    SELECT
+        n.nspname AS schema_name,
+        c.relname AS table_name,
+        a.attname AS column_name,
+        format_type(a.atttypid, a.atttypmod) AS data_type,
+        CASE WHEN a.attnotnull THEN 'NO' ELSE 'YES' END AS is_nullable,
+        pg_get_expr(ad.adbin, ad.adrelid) AS column_default,
+        i.relname AS index_name,
+        ix.indisunique AS is_unique,
+        array_to_string(array_agg(att2.attname ORDER BY att2.attnum), ', ') AS index_columns
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid
+    LEFT JOIN pg_attrdef ad ON a.attrelid = ad.adrelid AND a.attnum = ad.adnum
+    LEFT JOIN pg_index ix ON c.oid = ix.indrelid
+    LEFT JOIN pg_class i ON i.oid = ix.indexrelid
+    LEFT JOIN pg_attribute att2 ON att2.attrelid = ix.indexrelid
+    WHERE c.relkind = 'r'
+      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+      AND a.attnum > 0
+    GROUP BY
+        n.nspname, c.relname, a.attname, a.attnum,
+        a.atttypid, a.atttypmod, a.attnotnull,
+        ad.adbin, ad.adrelid, i.relname, ix.indisunique
+    ORDER BY n.nspname, c.relname, a.attnum
+) TO '/tmp/schema_table_index_overview.txt' WITH CSV HEADER DELIMITER E'\t'
+```
