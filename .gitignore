@@ -39,5 +39,3 @@ next-env.d.ts
 .claude
 dist/
 .serverless/
-package.json
-tsconfig.json
