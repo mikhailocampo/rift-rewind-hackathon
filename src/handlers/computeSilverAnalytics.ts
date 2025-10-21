@@ -11,13 +11,15 @@
  * @returns SQS batch response with successes/failures
  */
 
-import { SQSEvent, SQSBatchResponse, SQSBatchItemFailure } from 'aws-lambda';
+import { SQSEvent, SQSBatchItemFailure } from 'aws-lambda';
 import { SilverAnalyticsService } from '../services/silverAnalyticsService';
 import { MatchIngestedEvent } from '../types';
 
 const RANKED_QUEUE_IDS = [420, 440]; // Ranked Solo/Duo and Ranked Flex
 
-export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> {
+export const handler = async (
+  event: SQSEvent
+): Promise<{ batchItemFailures: SQSBatchItemFailure[] }> => {
   console.log(`Received ${event.Records.length} SQS messages`);
 
   const service = new SilverAnalyticsService();
@@ -44,6 +46,16 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> {
       console.log(
         `Computing silver analytics for ranked match ${matchEvent.externalMatchId} (queueId: ${matchEvent.queueId})`
       );
+
+      // OPTIMIZATION: Check if analytics already computed (deduplication)
+      const alreadyComputed = await service.checkIfAnalyticsExist(matchEvent.matchId);
+      if (alreadyComputed) {
+        console.log(
+          `Silver analytics already computed for match ${matchEvent.matchId}, skipping duplicate processing`
+        );
+        // Successfully processed (skip duplicate), delete from queue
+        continue;
+      }
 
       // Compute participant analytics (4-factor model for all 10 players)
       await service.computeParticipantAnalytics(matchEvent.matchId);
