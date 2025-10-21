@@ -235,3 +235,185 @@ export interface TimelineResponse {
   metadata: MatchMetadata;
   info: TimelineInfo;
 }
+
+// ============================================
+// EventBridge Event Types
+// ============================================
+
+export interface MatchIngestedEvent {
+  matchId: string;  // UUID
+  externalMatchId: string;
+  queueId: number;
+  participantCount: number;
+  timestamp: string;  // ISO 8601
+}
+
+// ============================================
+// Silver Analytics Types (SILVER layer)
+// ============================================
+
+/**
+ * Participant analytics data (4-factor model)
+ * Maps to match_participant_analytics table
+ */
+export interface ParticipantAnalyticsData {
+  match_participant_id: string;  // UUID - foreign key
+  match_id: string;  // UUID
+  player_profile_id: string | null;  // UUID or null
+
+  // Economy metrics
+  gold_per_minute: number | null;
+  cs_per_minute: number | null;
+  damage_per_minute: number | null;
+  gold_advantage_at_10: number | null;
+  gold_advantage_at_15: number | null;
+  cs_advantage_at_10: number | null;
+  xp_advantage_at_15: number | null;
+  early_laning_gold_exp_advantage: number | null;
+  bounty_gold: number | null;
+
+  // Objectives/Macro metrics
+  objective_participation_rate: number | null;
+  takedowns_after_level_advantage: number | null;
+  baron_participation: number | null;
+  dragon_participation: number | null;
+  tower_participation: number | null;
+  first_turret_contribution: boolean | null;
+  macro_score: number | null;
+
+  // Map control/Vision metrics
+  vision_score_per_minute: number | null;
+  control_ward_uptime_percent: number | null;
+  stealth_wards_placed: number | null;
+  wards_cleared: number | null;
+  vision_advantage_vs_opponent: number | null;
+  roam_efficiency_score: number | null;
+
+  // Error rate metrics
+  deaths_per_minute: number | null;
+  unforced_death_rate: number | null;
+  kill_participation: number | null;
+  survival_time_percent: number | null;
+  tempo_loss_on_death_avg: number | null;
+  wave_management_score: number | null;
+
+  // Composite scores (0-100 normalized)
+  economy_score: number | null;
+  objectives_score: number | null;
+  map_control_score: number | null;
+  error_rate_score: number | null;
+  overall_performance_score: number | null;
+}
+
+/**
+ * Timeline analytics data (match-level tempo/objectives)
+ * Maps to match_timeline_analytics table
+ */
+export interface TimelineAnalyticsData {
+  match_id: string;  // UUID
+
+  // First blood
+  first_blood_timestamp_ms: number | null;
+  first_blood_team_id: number | null;
+  first_blood_killer_participant_id: number | null;
+
+  // First tower
+  first_tower_timestamp_ms: number | null;
+  first_tower_team_id: number | null;
+
+  // First dragon
+  first_dragon_timestamp_ms: number | null;
+  first_dragon_team_id: number | null;
+
+  // First baron
+  first_baron_timestamp_ms: number | null;
+  first_baron_team_id: number | null;
+
+  // Objective contest quality
+  avg_players_near_dragon_kills: number | null;
+  avg_players_near_baron_kills: number | null;
+  objective_steals_count: number | null;
+
+  // Tempo shifts (JSONB in DB)
+  gold_swing_events: Array<{
+    timestamp: number;
+    team_id: number;
+    gold_delta: number;
+    reason: string;
+  }> | null;
+  ace_timestamps: number[] | null;
+}
+
+/**
+ * Rolling analytics data (aggregated across N matches)
+ * Maps to player_rolling_analytics table
+ */
+export interface RollingAnalyticsData {
+  player_profile_id: string;  // UUID
+
+  // Window configuration
+  match_count: number;
+  champion_id: number | null;
+  queue_id: number | null;
+  team_position: string | null;
+
+  // Averaged 4 factors
+  avg_economy_score: number | null;
+  avg_objectives_score: number | null;
+  avg_map_control_score: number | null;
+  avg_error_rate_score: number | null;
+  avg_overall_performance: number | null;
+
+  // Win rate
+  win_rate: number | null;
+  total_matches: number;
+
+  // Trends
+  economy_trend: 'improving' | 'declining' | 'stable' | null;
+  objectives_trend: 'improving' | 'declining' | 'stable' | null;
+  map_control_trend: 'improving' | 'declining' | 'stable' | null;
+  error_rate_trend: 'improving' | 'declining' | 'stable' | null;
+
+  // Match IDs in this aggregate (array of UUIDs)
+  match_ids: string[] | null;
+}
+
+// ============================================
+// API Response Types
+// ============================================
+
+export interface PlayerMatchSummary {
+  matchId: string;
+  externalMatchId: string;
+  queueId: number;
+  startedAt: string;  // ISO 8601
+  duration: number;  // seconds
+  win: boolean;
+  championName: string;
+  championId: number;
+  teamPosition: string | null;
+  kills: number;
+  deaths: number;
+  assists: number;
+  goldEarned: number;
+  cs: number;
+  visionScore: number;
+  analytics?: {
+    economyScore: number | null;
+    objectivesScore: number | null;
+    mapControlScore: number | null;
+    errorRateScore: number | null;
+    overallScore: number | null;
+    computed: boolean;
+  } | null;
+}
+
+export interface PlayerMatchesResponse {
+  success: boolean;
+  puuid: string;
+  gameName?: string;
+  tagLine?: string;
+  matches: PlayerMatchSummary[];
+  totalMatches: number;
+  error?: string;
+}

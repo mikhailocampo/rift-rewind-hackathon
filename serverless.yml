@@ -26,11 +26,25 @@ provider:
         - Effect: Allow
           Action:
             - rds-data:ExecuteStatement
+            - rds-data:BatchExecuteStatement
             - rds-data:BeginTransaction
             - rds-data:CommitTransaction
             - rds-data:RollbackTransaction
           Resource:
             - arn:aws:rds:us-west-1:279243015913:db:rift-rewind-instance-1
+        - Effect: Allow
+          Action:
+            - events:PutEvents
+          Resource:
+            - arn:aws:events:us-west-1:279243015913:event-bus/default
+        - Effect: Allow
+          Action:
+            - sqs:ReceiveMessage
+            - sqs:DeleteMessage
+            - sqs:GetQueueAttributes
+            - sqs:ChangeMessageVisibility
+          Resource:
+            - arn:aws:sqs:us-west-1:279243015913:silver-analytics-queue
 
 functions:
   riotProfileFetcher:
@@ -65,6 +79,33 @@ functions:
           path: /matches/ingest
           method: post
           cors: true
+
+  computeSilverAnalytics:
+    handler: dist/handlers/computeSilverAnalytics.handler
+    timeout: 120  # Longer timeout for complex SQL transformations
+    memorySize: 1024  # More memory for analytical queries
+    events:
+      - sqs:
+          arn: arn:aws:sqs:us-west-1:279243015913:silver-analytics-queue
+          batchSize: 1  # Process one match at a time for simpler error handling
+          maximumBatchingWindowInSeconds: 0  # Process immediately
+          functionResponseType: ReportBatchItemFailures  # Partial batch failure handling
+
+  getPlayerMatches:
+    handler: dist/handlers/getPlayerMatches.handler
+    timeout: 30
+    events:
+      - http:
+          path: /players/{puuid}/matches
+          method: get
+          cors: true
+          request:
+            parameters:
+              paths:
+                puuid: true
+              querystrings:
+                includeAnalytics: false
+                limit: false
 
 package:
   patterns:

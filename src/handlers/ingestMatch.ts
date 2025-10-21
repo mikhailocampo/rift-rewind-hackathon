@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { MatchIngestionService } from '../services/matchIngestionService';
-import { RiotRegion } from '../types';
+import { EventBridgeClient } from '../utils/eventBridgeClient';
+import { RiotRegion, MatchIngestedEvent } from '../types';
 
 /**
  * Ingest Match Lambda
@@ -85,6 +86,37 @@ export const handler = async (
 
     if (result.success) {
       console.log(`Match ingestion successful: ${JSON.stringify(result)}`);
+
+      // Publish EventBridge event to trigger silver analytics ETL
+      try {
+        const eventBridgeClient = new EventBridgeClient();
+        const matchEvent: MatchIngestedEvent = {
+          matchId: result.matchId,
+          externalMatchId: result.externalMatchId,
+          queueId: 0, // Will be populated from match data
+          participantCount: result.participantsIngested,
+          timestamp: new Date().toISOString()
+        };
+
+        // Fetch queue_id from database to include in event
+        const { RdsDataClient } = await import('../database/rdsDataClient');
+        const rdsClient = new RdsDataClient();
+        const queueIdQuery = `SELECT queue_id FROM match WHERE id = :match_id::uuid`;
+        const queueIdResult = await rdsClient.executeStatement(queueIdQuery, [
+          { name: 'match_id', value: { stringValue: result.matchId } }
+        ]);
+
+        if (queueIdResult.records && queueIdResult.records.length > 0) {
+          matchEvent.queueId = Number(queueIdResult.records[0][0].longValue);
+        }
+
+        await eventBridgeClient.publishMatchIngestedEvent(matchEvent);
+        console.log(`Published EventBridge event for match ${result.matchId}`);
+      } catch (eventError: any) {
+        // Log error but don't fail the ingestion
+        console.error('Failed to publish EventBridge event:', eventError);
+        // Analytics will need to be computed manually or retried
+      }
 
       return {
         statusCode: 200,
