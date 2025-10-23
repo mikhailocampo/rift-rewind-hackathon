@@ -892,7 +892,7 @@ export class SilverAnalyticsService {
 
     // First dragon
     const firstDragonQuery = `
-      SELECT timestamp_ms, killer_team_id
+      SELECT timestamp_ms, killer_participant_id
       FROM match_timeline_event
       WHERE match_id = :match_id::uuid
         AND event_type = 'ELITE_MONSTER_KILL'
@@ -910,12 +910,25 @@ export class SilverAnalyticsService {
 
     if (firstDragon.records && firstDragon.records.length > 0) {
       firstDragonTimestamp = Number(firstDragon.records[0][0].longValue);
-      firstDragonTeamId = Number(firstDragon.records[0][1].longValue);
+      const killerId = Number(firstDragon.records[0][1].longValue);
+
+      // Look up team_id from participant
+      const teamQuery = `
+        SELECT team_id FROM match_participant
+        WHERE match_id = :match_id::uuid AND participant_id = :participant_id
+      `;
+      const teamResult = await this.rdsClient.executeStatement(teamQuery, [
+        { name: 'match_id', value: { stringValue: matchId } },
+        { name: 'participant_id', value: { longValue: killerId } }
+      ]);
+      firstDragonTeamId = teamResult.records?.[0]?.[0]?.longValue
+        ? Number(teamResult.records[0][0].longValue)
+        : null;
     }
 
     // First baron
     const firstBaronQuery = `
-      SELECT timestamp_ms, killer_team_id
+      SELECT timestamp_ms, killer_participant_id
       FROM match_timeline_event
       WHERE match_id = :match_id::uuid
         AND event_type = 'ELITE_MONSTER_KILL'
@@ -933,7 +946,20 @@ export class SilverAnalyticsService {
 
     if (firstBaron.records && firstBaron.records.length > 0) {
       firstBaronTimestamp = Number(firstBaron.records[0][0].longValue);
-      firstBaronTeamId = Number(firstBaron.records[0][1].longValue);
+      const killerId = Number(firstBaron.records[0][1].longValue);
+
+      // Look up team_id from participant
+      const teamQuery = `
+        SELECT team_id FROM match_participant
+        WHERE match_id = :match_id::uuid AND participant_id = :participant_id
+      `;
+      const teamResult = await this.rdsClient.executeStatement(teamQuery, [
+        { name: 'match_id', value: { stringValue: matchId } },
+        { name: 'participant_id', value: { longValue: killerId } }
+      ]);
+      firstBaronTeamId = teamResult.records?.[0]?.[0]?.longValue
+        ? Number(teamResult.records[0][0].longValue)
+        : null;
     }
 
     const timelineData: TimelineAnalyticsData = {
