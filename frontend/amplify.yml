@@ -1,0 +1,19 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Amplify detects bun from bun.lock automatically
+        - bun install --frozen-lockfile
+    build:
+      commands:
+        - bun run build
+  artifacts:
+    # Next.js 13+ App Router outputs
+    baseDirectory: .next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
