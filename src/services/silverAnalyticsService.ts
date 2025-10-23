@@ -105,9 +105,9 @@ export class SilverAnalyticsService {
   private async batchFetchFrames(
     matchId: string,
     frameNumber: number
-  ): Promise<Map<number, { totalGold: number; xp: number; minionsKilled: number }>> {
+  ): Promise<Map<number, { totalGold: number; xp: number }>> {
     const query = `
-      SELECT participant_id, total_gold, xp, minions_killed
+      SELECT participant_id, total_gold, xp
       FROM match_timeline_frame
       WHERE match_id = :match_id::uuid AND frame_number = :frame_number
     `;
@@ -117,15 +117,14 @@ export class SilverAnalyticsService {
       { name: 'frame_number', value: { longValue: frameNumber } }
     ]);
 
-    const frameMap = new Map<number, { totalGold: number; xp: number; minionsKilled: number }>();
+    const frameMap = new Map<number, { totalGold: number; xp: number }>();
     
     if (result.records) {
       for (const row of result.records) {
         const participantId = Number(row[0].longValue);
         frameMap.set(participantId, {
           totalGold: Number(row[1].longValue || 0),
-          xp: Number(row[2].longValue || 0),
-          minionsKilled: Number(row[3]?.longValue || 0)
+          xp: Number(row[2].longValue || 0)
         });
       }
     }
@@ -410,6 +409,7 @@ export class SilverAnalyticsService {
   /**
    * Compute advantage metrics from timeline frames at specific time marks
    * OPTIMIZED: Uses pre-fetched batch data instead of individual queries
+   * NOTE: CS advantage at 10 is not computed because minions_killed is not stored frame-by-frame
    */
   private async computeAdvantageMetrics(params: {
     matchId: string;
@@ -417,8 +417,8 @@ export class SilverAnalyticsService {
     teamId: number;
     individualPosition: string | null;
     opponentMap: Map<string, number>;
-    frames10: Map<number, { totalGold: number; xp: number; minionsKilled: number }>;
-    frames15: Map<number, { totalGold: number; xp: number; minionsKilled: number }>;
+    frames10: Map<number, { totalGold: number; xp: number }>;
+    frames15: Map<number, { totalGold: number; xp: number }>;
   }): Promise<Partial<ParticipantAnalyticsData>> {
     const { inGameParticipantId, teamId, individualPosition, opponentMap, frames10, frames15 } = params;
 
@@ -441,13 +441,11 @@ export class SilverAnalyticsService {
 
     // Parse frame 10 data from pre-fetched map (OPTIMIZATION: no query needed)
     let goldAdv10 = null;
-    let csAdv10 = null;
     const playerFrame10 = frames10.get(inGameParticipantId);
     const opponentFrame10 = frames10.get(opponentId);
 
     if (playerFrame10 && opponentFrame10) {
       goldAdv10 = playerFrame10.totalGold - opponentFrame10.totalGold;
-      csAdv10 = playerFrame10.minionsKilled - opponentFrame10.minionsKilled;
     }
 
     // Parse frame 15 data from pre-fetched map (OPTIMIZATION: no query needed)
@@ -464,7 +462,7 @@ export class SilverAnalyticsService {
     return {
       gold_advantage_at_10: goldAdv10,
       gold_advantage_at_15: goldAdv15,
-      cs_advantage_at_10: csAdv10,
+      cs_advantage_at_10: null, // Not available - minions_killed not stored in timeline frames
       xp_advantage_at_15: xpAdv15
     };
   }
