@@ -1,11 +1,17 @@
-name: Deploy to AWS
+name: Deploy Backend (Lambdas)
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
     inputs:
       stage:
@@ -26,6 +32,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
 
     steps:
       - name: Checkout code
@@ -36,15 +45,16 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Cache node_modules
         id: cache-node-modules
         uses: actions/cache@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          path: backend/node_modules
+          key: ${{ runner.os }}-backend-node-modules-${{ hashFiles('backend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            ${{ runner.os }}-backend-node-modules-
 
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
@@ -58,14 +68,17 @@ jobs:
         with:
           name: build-artifacts
           path: |
-            node_modules/
-            dist/
+            backend/node_modules/
+            backend/dist/
           retention-days: 1
 
   test:
     name: Test
     needs: build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
 
     steps:
       - name: Checkout code
@@ -76,15 +89,16 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Cache node_modules
         id: cache-node-modules
         uses: actions/cache@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          path: backend/node_modules
+          key: ${{ runner.os }}-backend-node-modules-${{ hashFiles('backend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            ${{ runner.os }}-backend-node-modules-
 
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
@@ -97,6 +111,9 @@ jobs:
     name: Deploy to AWS
     needs: [build, test]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
     # Deploy on: PRs (dev), push to main (prod), or manual workflow dispatch
     if: |
       github.event_name == 'workflow_dispatch' ||
@@ -111,22 +128,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifacts
-          path: .
+          path: backend
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
       - name: Cache node_modules
         id: cache-node-modules
         uses: actions/cache@v4
         with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+          path: backend/node_modules
+          key: ${{ runner.os }}-backend-node-modules-${{ hashFiles('backend/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-modules-
+            ${{ runner.os }}-backend-node-modules-
 
       - name: Install dependencies
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
@@ -174,7 +192,7 @@ jobs:
           script: |
             const stage = '${{ steps.info.outputs.stage }}';
             const baseUrl = '${{ steps.info.outputs.base_url }}';
-            const body = `### Deployment Successful! 🚀
+            const body = `### Backend Deployment Successful! 🚀
 
             **Stage:** \`${stage}\`
             **Base URL:** \`${baseUrl}\`
@@ -184,7 +202,7 @@ jobs:
             - \`GET ${baseUrl}/matches/player/{puuid}\` - Get match IDs
             - \`POST ${baseUrl}/matches/ingest\` - Ingest match data
 
-            Your changes have been deployed and are ready for testing.`;
+            Your backend changes have been deployed and are ready for testing.`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
