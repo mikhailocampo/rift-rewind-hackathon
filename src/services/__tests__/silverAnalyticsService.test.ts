@@ -568,7 +568,13 @@ describe('SilverAnalyticsService', () => {
           // First dragon
           records: [[
             { longValue: 360000 }, // timestamp_ms
-            { longValue: 200 } // killer_team_id
+            { longValue: 3 } // killer_participant_id
+          ]]
+        })
+        .mockResolvedValueOnce({
+          // Team lookup for dragon killer
+          records: [[
+            { longValue: 200 } // team_id
           ]]
         })
         .mockResolvedValueOnce({ records: [] }); // No first baron
@@ -592,7 +598,13 @@ describe('SilverAnalyticsService', () => {
           // First baron
           records: [[
             { longValue: 1200000 }, // timestamp_ms
-            { longValue: 100 } // killer_team_id
+            { longValue: 7 } // killer_participant_id
+          ]]
+        })
+        .mockResolvedValueOnce({
+          // Team lookup for baron killer
+          records: [[
+            { longValue: 100 } // team_id
           ]]
         });
 
@@ -703,9 +715,11 @@ describe('SilverAnalyticsService', () => {
     });
 
     it('should skip analytics if match has no participants', async () => {
-      mockRdsClient.executeStatement = jest.fn().mockResolvedValue({
-        records: [] // No participants
-      });
+      mockRdsClient.executeStatement = jest.fn()
+        .mockResolvedValueOnce({ records: [] }) // batchFetchOpponents
+        .mockResolvedValueOnce({ records: [] }) // batchFetchFrames (frame 10)
+        .mockResolvedValueOnce({ records: [] }) // batchFetchFrames (frame 15)
+        .mockResolvedValueOnce({ records: [] }); // participants query - no participants
 
       await service.computeParticipantAnalytics('uuid-match-123');
 
