@@ -17,8 +17,8 @@ applications:
             - export PATH="$BUN_INSTALL/bin:$PATH"
             - bun run build
       artifacts:
-        # Next.js 13+ App Router outputs
-        baseDirectory: .next
+        # Next.js outputs - serve from build root
+        baseDirectory: .
         files:
           - '**/*'
       cache:
