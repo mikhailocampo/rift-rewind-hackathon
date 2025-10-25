@@ -5,10 +5,16 @@ applications:
       phases:
         preBuild:
           commands:
-            # Amplify detects bun from bun.lock automatically
+            # Install bun
+            - curl -fsSL https://bun.sh/install | bash
+            - export BUN_INSTALL="$HOME/.bun"
+            - export PATH="$BUN_INSTALL/bin:$PATH"
+            # Install dependencies
             - bun install --frozen-lockfile
         build:
           commands:
+            - export BUN_INSTALL="$HOME/.bun"
+            - export PATH="$BUN_INSTALL/bin:$PATH"
             - bun run build
       artifacts:
         # Next.js 13+ App Router outputs
