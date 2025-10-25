@@ -16,11 +16,6 @@ applications:
             - export BUN_INSTALL="$HOME/.bun"
             - export PATH="$BUN_INSTALL/bin:$PATH"
             - bun run build
-      artifacts:
-        # Next.js outputs - serve from build root
-        baseDirectory: .
-        files:
-          - '**/*'
       cache:
         paths:
           - node_modules/**/*
