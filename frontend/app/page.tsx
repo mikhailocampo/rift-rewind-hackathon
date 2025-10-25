@@ -1,7 +1,12 @@
 import Image from "next/image";
+import { headers } from 'next/headers';
+
+// Force dynamic rendering (SSR)
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  // Minimal SSR - fetch server timestamp
+  // Access headers to force SSR
+  const headersList = await headers();
   const timestamp = new Date().toISOString();
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">

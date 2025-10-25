@@ -2,6 +2,7 @@ version: 1
 applications:
   - appRoot: frontend
     frontend:
+      buildPath: /
       phases:
         preBuild:
           commands:
@@ -17,7 +18,7 @@ applications:
             - export PATH="$BUN_INSTALL/bin:$PATH"
             - bun run build
       artifacts:
-        baseDirectory: .next
+        baseDirectory: .
         files:
           - '**/*'
       cache:

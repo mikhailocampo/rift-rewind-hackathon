@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // No output mode - let Amplify handle SSR automatically
 };
 
 export default nextConfig;
